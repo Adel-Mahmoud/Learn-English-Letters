@@ -188,7 +188,31 @@
         voices = synth.getVoices();
         if (voices.length === 0) setTimeout(loadVoices, 200);
     }
+    
+    function populateVoiceList() {
+        if (voices.length === 0) return;
+        
+        voicesSelect.innerHTML = '';
 
+        const englishVoices = voices.filter(voice => 
+            voice.lang.includes('en') || voice.name.includes('English')
+        );
+        
+        if (englishVoices.length > 0) {
+            voiceSelector.style.display = 'block';
+            
+            englishVoices.forEach((voice, i) => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.setAttribute('data-voice', i);
+                voicesSelect.appendChild(option);
+            });
+            selectedVoice = englishVoices[0];
+        } else if (voices.length > 0) {
+            selectedVoice = voices[0];
+        }
+    }
+    
     function speak(letter) {
         if (!synth) return;
         const utter = new SpeechSynthesisUtterance(isUpperCase ? letter.toUpperCase() : letter);
