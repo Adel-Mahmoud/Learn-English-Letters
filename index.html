@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learn-English-Letters</title>
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        text-align: center;
+        background: #f0f8ff;
+        margin: 0;
+        padding: 20px;
+        color: #333;
+    }
+    .tabs {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+        gap: 10px;
+    }
+    .tab {
+        padding: 12px 24px;
+        cursor: pointer;
+        background: #e0e0e0;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: all 0.3s;
+    }
+    .tab.active {
+        background: #4CAF50;
+        color: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .content {
+        display: none;
+        animation: fadeIn 0.5s;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .content.active {
+        display: block;
+    }
+    .letters {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 15px;
+        margin: 25px auto;
+        max-width: 800px;
+    }
+    .letter {
+        font-size: 32px;
+        padding: 20px;
+        background: white;
+        border: 2px solid #ddd;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        aspect-ratio: 1/1;
+    }
+    .letter:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+    }
+    .letter.correct {
+        background: #4CAF50;
+        color: white;
+        border-color: #388E3C;
+    }
+    .letter.wrong {
+        background: #f44336;
+        color: white;
+        border-color: #D32F2F;
+    }
+    .controls {
+        margin: 25px 0;
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    button {
+        padding: 12px 24px;
+        cursor: pointer;
+        background: #2196F3;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s;
+    }
+    button:hover {
+        background: #0b7dda;
+        transform: translateY(-2px);
+    }
+    button:active {
+        transform: translateY(0);
+    }
+    #warning {
+        color: #d32f2f;
+        background: #ffebee;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px auto;
+        max-width: 500px;
+        display: none;
+    }
+    .voice-selector {
+        margin: 15px 0;
+    }
+    .progress-container {
+        width: 100%;
+        max-width: 300px;
+        background: #e0e0e0;
+        border-radius: 5px;
+        margin: 20px auto;
+        overflow: hidden;
+    }
+    .progress-bar {
+        height: 10px;
+        background: #4CAF50;
+        width: 0%;
+        transition: width 0.3s;
+    }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+    <div class="tab active" data-target="learn">تعلم الحروف</div>
+    <div class="tab" data-target="game">اختبر نفسك</div>
+</div>
+
+<div id="learn" class="content active">
+    <div class="controls">
+        <button id="toggleCase">حروف كبيرة</button>
+        <button id="preloadVoices">تحميل الأصوات</button>
+    </div>
+    <div id="warning">⚠️ المتصفح لا يدعم نطق الحروف أو الأصوات غير متاحة. يرجى استخدام Chrome أو Edge</div>
+    <div class="voice-selector" id="voiceSelector" style="display:none;">
+        <label for="voices">اختر صوتًا:</label>
+        <select id="voices"></select>
+    </div>
+    <div class="progress-container" id="preloadProgress" style="display:none;">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="letters" id="letters-learn"></div>
+</div>
+
+<div id="game" class="content">
+    <div class="controls">
+        <button id="toggleCaseGame">حروف كبيرة</button>
+        <button id="playSound">نطق حرف عشوائي</button>
+        <button id="repeatSound">إعادة النطق</button>
+    </div>
+    <div class="letters" id="letters-game"></div>
+</div>
+
+<audio id="clap" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" preload="auto"></audio>
+<audio id="error" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3" preload="auto"></audio>
+
+<script>
+    const tabs = document.querySelectorAll('.tab');
+    const contents = document.querySelectorAll('.content');
+    const lettersLearn = document.getElementById('letters-learn');
+    const lettersGame = document.getElementById('letters-game');
+    const toggleCaseBtn = document.getElementById('toggleCase');
+    const toggleCaseGameBtn = document.getElementById('toggleCaseGame');
+    const playSoundBtn = document.getElementById('playSound');
+    const repeatSoundBtn = document.getElementById('repeatSound');
+    const warning = document.getElementById('warning');
+    const voiceSelector = document.getElementById('voiceSelector');
+    const voicesSelect = document.getElementById('voices');
+    const preloadBtn = document.getElementById('preloadVoices');
+    const preloadProgress = document.getElementById('preloadProgress');
+    const progressBar = document.getElementById('progressBar');
+
+    const clapSound = document.getElementById('clap');
+    const errorSound = document.getElementById('error');
+    const synth = window.speechSynthesis;
+    let voices = [];
+    let isUpperCase = false;
+    let currentLetter = '';
+    let selectedVoice = null;
+    let isPreloading = false;
+
+    const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        checkSpeechSupport();
+        renderLetters(lettersLearn);
+        renderLetters(lettersGame, true);
+        setupEventListeners();
+
+        setTimeout(loadVoices, 500);
+    });
+
+    function checkSpeechSupport() {
+        if (!synth) {
+            warning.style.display = 'block';
+            return false;
+        }
+        return true;
+    }
+
+    function loadVoices() {
+        if (!checkSpeechSupport()) return;
+
+        voices = synth.getVoices();
+        
+        if (voices.length === 0) {
+            synth.onvoiceschanged = () => {
+                voices = synth.getVoices();
+                populateVoiceList();
+                synth.onvoiceschanged = null;
+            };
+            return;
+        }
+        
+        populateVoiceList();
+    }
+
+    function populateVoiceList() {
+        if (voices.length === 0) return;
+        
+        voicesSelect.innerHTML = '';
+
+        const englishVoices = voices.filter(voice => 
+            voice.lang.includes('en') || voice.name.includes('English')
+        );
+        
+        if (englishVoices.length > 0) {
+            voiceSelector.style.display = 'block';
+            
+            englishVoices.forEach((voice, i) => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.setAttribute('data-voice', i);
+                voicesSelect.appendChild(option);
+            });
+            
+            selectedVoice = englishVoices[0];
+        } else if (voices.length > 0) {
+            selectedVoice = voices[0];
+        }
+    }
+
+    voicesSelect.addEventListener('change', () => {
+        const selectedIndex = voicesSelect.selectedOptions[0].getAttribute('data-voice');
+        selectedVoice = voices[selectedIndex];
+    });
+
+    function speak(letter) {
+        if (!checkSpeechSupport()) return;
+
+        if (voices.length === 0) {
+            warning.textContent = 'جاري تحميل الأصوات... يرجى الانتظار أو الضغط على زر "تحميل الأصوات"';
+            warning.style.display = 'block';
+            loadVoices();
+            return;
+        }
+        
+        const utter = new SpeechSynthesisUtterance(isUpperCase ? letter.toUpperCase() : letter);
+        utter.lang = 'en-US';
+        utter.rate = 0.9; 
+        if (selectedVoice) {
+            utter.voice = selectedVoice;
+        }
+        
+        synth.cancel();
+        synth.speak(utter);
+    }
+
+    function renderLetters(container, isGame = false) {
+        container.innerHTML = '';
+        
+        alphabet.forEach(letter => {
+            const el = document.createElement('div');
+            el.className = 'letter';
+            el.textContent = isUpperCase ? letter.toUpperCase() : letter;
+            
+            if (isGame) {
+                el.addEventListener('click', () => checkAnswer(el, letter));
+            } else {
+                el.addEventListener('click', () => {
+                    speak(letter);
+                    el.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        el.style.transform = 'scale(1)';
+                    }, 200);
+                });
+            }
+            
+            container.appendChild(el);
+        });
+    }
+
+    function toggleCase() {
+        isUpperCase = !isUpperCase;
+        const label = isUpperCase ? 'حروف صغيرة' : 'حروف كبيرة';
+        toggleCaseBtn.textContent = label;
+        toggleCaseGameBtn.textContent = label;
+        renderLetters(lettersLearn);
+        renderLetters(lettersGame, true);
+    }
+
+    function playRandomLetter() {
+        if (!checkSpeechSupport()) return;
+        
+        const randomIndex = Math.floor(Math.random() * alphabet.length);
+        currentLetter = alphabet[randomIndex];
+        document.querySelectorAll('#letters-game .letter').forEach(l => {
+            l.classList.remove('correct', 'wrong');
+        });
+        speak(currentLetter);
+    }
+
+    function repeatCurrentLetter() {
+        if (currentLetter) {
+            speak(currentLetter);
+        } else {
+            playRandomLetter();
+        }
+    }
+
+    function checkAnswer(el, letter) {
+        if (!currentLetter) return;
+        
+        if (letter === currentLetter) {
+            el.classList.add('correct');
+            clapSound.play();
+            setTimeout(playRandomLetter, 1000);
+        } else {
+            el.classList.add('wrong');
+            errorSound.play();
+        }
+    }
+
+    function preloadAllVoices() {
+        if (isPreloading || !checkSpeechSupport()) return;
+        
+        if (voices.length === 0) {
+            warning.textContent = 'لا توجد أصوات متاحة بعد. يرجى المحاولة لاحقًا';
+            warning.style.display = 'block';
+            return;
+        }
+        
+        isPreloading = true;
+        preloadProgress.style.display = 'block';
+        progressBar.style.width = '0%';
+        
+        let loaded = 0;
+        const total = alphabet.length;
+        
+        alphabet.forEach((letter, index) => {
+            const utter = new SpeechSynthesisUtterance(letter);
+            utter.rate = 0.7;
+            
+            if (selectedVoice) {
+                utter.voice = selectedVoice;
+            }
+            
+            utter.onend = () => {
+                loaded++;
+                const progress = Math.floor((loaded / total) * 100);
+                progressBar.style.width = `${progress}%`;
+                
+                if (loaded === total) {
+                    isPreloading = false;
+                    setTimeout(() => {
+                        preloadProgress.style.display = 'none';
+                    }, 1000);
+                }
+            };
+            
+            setTimeout(() => {
+                synth.speak(utter);
+            }, index * 200); 
+        });
+    }
+    
+    function setupEventListeners() {
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                contents.forEach(c => c.classList.remove('active'));
+                document.getElementById(tab.dataset.target).classList.add('active');
+            });
+        });
+        
+        toggleCaseBtn.addEventListener('click', toggleCase);
+        toggleCaseGameBtn.addEventListener('click', toggleCase);
+        playSoundBtn.addEventListener('click', playRandomLetter);
+        repeatSoundBtn.addEventListener('click', repeatCurrentLetter);
+        preloadBtn.addEventListener('click', preloadAllVoices);
+        
+        window.addEventListener('focus', loadVoices);
+    }
+</script>
+</body>
+</html>
