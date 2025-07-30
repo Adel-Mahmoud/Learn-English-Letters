@@ -175,146 +175,62 @@
     const playSoundBtn = document.getElementById('playSound');
     const repeatSoundBtn = document.getElementById('repeatSound');
     const warning = document.getElementById('warning');
-    const voiceSelector = document.getElementById('voiceSelector');
-    const voicesSelect = document.getElementById('voices');
-    const preloadBtn = document.getElementById('preloadVoices');
-    const preloadProgress = document.getElementById('preloadProgress');
-    const progressBar = document.getElementById('progressBar');
-
     const clapSound = document.getElementById('clap');
     const errorSound = document.getElementById('error');
     const synth = window.speechSynthesis;
     let voices = [];
     let isUpperCase = false;
     let currentLetter = '';
-    let selectedVoice = null;
-    let isPreloading = false;
-
+    let wrongAttempts = 0;
     const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
-    document.addEventListener('DOMContentLoaded', () => {
-        checkSpeechSupport();
-        renderLetters(lettersLearn);
-        renderLetters(lettersGame, true);
-        setupEventListeners();
-
-        setTimeout(loadVoices, 500);
-    });
-
-    function checkSpeechSupport() {
-        if (!synth) {
-            warning.style.display = 'block';
-            return false;
-        }
-        return true;
-    }
-
     function loadVoices() {
-        if (!checkSpeechSupport()) return;
-
         voices = synth.getVoices();
-        
-        if (voices.length === 0) {
-            synth.onvoiceschanged = () => {
-                voices = synth.getVoices();
-                populateVoiceList();
-                synth.onvoiceschanged = null;
-            };
-            return;
-        }
-        
-        populateVoiceList();
+        if (voices.length === 0) setTimeout(loadVoices, 200);
     }
-
-    function populateVoiceList() {
-        if (voices.length === 0) return;
-        
-        voicesSelect.innerHTML = '';
-
-        const englishVoices = voices.filter(voice => 
-            voice.lang.includes('en') || voice.name.includes('English')
-        );
-        
-        if (englishVoices.length > 0) {
-            voiceSelector.style.display = 'block';
-            
-            englishVoices.forEach((voice, i) => {
-                const option = document.createElement('option');
-                option.textContent = `${voice.name} (${voice.lang})`;
-                option.setAttribute('data-voice', i);
-                voicesSelect.appendChild(option);
-            });
-            
-            selectedVoice = englishVoices[0];
-        } else if (voices.length > 0) {
-            selectedVoice = voices[0];
-        }
-    }
-
-    voicesSelect.addEventListener('change', () => {
-        const selectedIndex = voicesSelect.selectedOptions[0].getAttribute('data-voice');
-        selectedVoice = voices[selectedIndex];
-    });
 
     function speak(letter) {
-        if (!checkSpeechSupport()) return;
-
-        if (voices.length === 0) {
-            warning.textContent = 'جاري تحميل الأصوات... يرجى الانتظار أو الضغط على زر "تحميل الأصوات"';
-            warning.style.display = 'block';
-            loadVoices();
-            return;
-        }
-        
+        if (!synth) return;
         const utter = new SpeechSynthesisUtterance(isUpperCase ? letter.toUpperCase() : letter);
         utter.lang = 'en-US';
-        utter.rate = 0.9; 
-        if (selectedVoice) {
-            utter.voice = selectedVoice;
-        }
-        
+        utter.rate = 0.8;
+        const englishVoice = voices.find(voice => voice.lang.includes('en')) || voices[0];
+        if (englishVoice) utter.voice = englishVoice;
         synth.cancel();
         synth.speak(utter);
     }
 
+    function toggleCase() {
+        isUpperCase = !isUpperCase;
+        toggleCaseBtn.textContent = isUpperCase ? 'حروف صغيرة' : 'حروف كبيرة';
+        toggleCaseGameBtn.textContent = toggleCaseBtn.textContent;
+        renderLetters(lettersLearn);
+        renderLetters(lettersGame, true);
+    }
+
     function renderLetters(container, isGame = false) {
         container.innerHTML = '';
-        
         alphabet.forEach(letter => {
             const el = document.createElement('div');
             el.className = 'letter';
             el.textContent = isUpperCase ? letter.toUpperCase() : letter;
-            
             if (isGame) {
                 el.addEventListener('click', () => checkAnswer(el, letter));
             } else {
                 el.addEventListener('click', () => {
                     speak(letter);
                     el.style.transform = 'scale(0.95)';
-                    setTimeout(() => {
-                        el.style.transform = 'scale(1)';
-                    }, 200);
+                    setTimeout(() => el.style.transform = 'scale(1)', 200);
                 });
             }
-            
             container.appendChild(el);
         });
     }
 
-    function toggleCase() {
-        isUpperCase = !isUpperCase;
-        const label = isUpperCase ? 'حروف صغيرة' : 'حروف كبيرة';
-        toggleCaseBtn.textContent = label;
-        toggleCaseGameBtn.textContent = label;
-        renderLetters(lettersLearn);
-        renderLetters(lettersGame, true);
-    }
-
     function playRandomLetter() {
-        if (!checkSpeechSupport()) return;
-        
         const randomIndex = Math.floor(Math.random() * alphabet.length);
         currentLetter = alphabet[randomIndex];
+        wrongAttempts = 0;
         document.querySelectorAll('#letters-game .letter').forEach(l => {
             l.classList.remove('correct', 'wrong');
         });
@@ -322,11 +238,8 @@
     }
 
     function repeatCurrentLetter() {
-        if (currentLetter) {
-            speak(currentLetter);
-        } else {
-            playRandomLetter();
-        }
+        if (currentLetter) speak(currentLetter);
+        else playRandomLetter();
     }
 
     function checkAnswer(el, letter) {
@@ -339,70 +252,39 @@
         } else {
             el.classList.add('wrong');
             errorSound.play();
+            wrongAttempts++;
+            
+            if (wrongAttempts >= 2) {
+                const correctEl = Array.from(document.querySelectorAll('#letters-game .letter'))
+                    .find(l => l.textContent.toLowerCase() === currentLetter);
+                if (correctEl) correctEl.classList.add('correct');
+            }
         }
     }
 
-    function preloadAllVoices() {
-        if (isPreloading || !checkSpeechSupport()) return;
-        
-        if (voices.length === 0) {
-            warning.textContent = 'لا توجد أصوات متاحة بعد. يرجى المحاولة لاحقًا';
-            warning.style.display = 'block';
-            return;
-        }
-        
-        isPreloading = true;
-        preloadProgress.style.display = 'block';
-        progressBar.style.width = '0%';
-        
-        let loaded = 0;
-        const total = alphabet.length;
-        
-        alphabet.forEach((letter, index) => {
-            const utter = new SpeechSynthesisUtterance(letter);
-            utter.rate = 0.7;
-            
-            if (selectedVoice) {
-                utter.voice = selectedVoice;
-            }
-            
-            utter.onend = () => {
-                loaded++;
-                const progress = Math.floor((loaded / total) * 100);
-                progressBar.style.width = `${progress}%`;
-                
-                if (loaded === total) {
-                    isPreloading = false;
-                    setTimeout(() => {
-                        preloadProgress.style.display = 'none';
-                    }, 1000);
-                }
-            };
-            
-            setTimeout(() => {
-                synth.speak(utter);
-            }, index * 200); 
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            contents.forEach(c => c.classList.remove('active'));
+            document.getElementById(tab.dataset.target).classList.add('active');
         });
+    });
+
+    toggleCaseBtn.addEventListener('click', toggleCase);
+    toggleCaseGameBtn.addEventListener('click', toggleCase);
+    playSoundBtn.addEventListener('click', playRandomLetter);
+    repeatSoundBtn.addEventListener('click', repeatCurrentLetter);
+
+    if (synth) {
+        loadVoices();
+        synth.onvoiceschanged = loadVoices;
+    } else {
+        warning.style.display = 'block';
     }
-    
-    function setupEventListeners() {
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                contents.forEach(c => c.classList.remove('active'));
-                document.getElementById(tab.dataset.target).classList.add('active');
-            });
-        });
-        
-        toggleCaseBtn.addEventListener('click', toggleCase);
-        toggleCaseGameBtn.addEventListener('click', toggleCase);
-        playSoundBtn.addEventListener('click', playRandomLetter);
-        repeatSoundBtn.addEventListener('click', repeatCurrentLetter);
-        preloadBtn.addEventListener('click', preloadAllVoices);
-        
-        window.addEventListener('focus', loadVoices);
-    }
+
+    renderLetters(lettersLearn);
+    renderLetters(lettersGame, true);
 </script>
 </body>
 </html>
