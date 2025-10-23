@@ -2,11 +2,7 @@ const CACHE_NAME = 'letters-app-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/style.css',
-  '/script.js',
-  '/sounds/a.mp3', // مثال على ملفاتك التعليمية
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/logo.png'
 ];
 
 self.addEventListener('install', event => {
