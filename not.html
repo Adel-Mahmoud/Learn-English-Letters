@@ -1,56 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>تطبيق الويب العادي</title>
+    <title>تطبيق إشعارات صحيح</title>
 </head>
 <body>
     <button id="enableNotifications">تفعيل الإشعارات</button>
-    <button id="showNotification">إرسال إشعار تجريبي</button>
+    <button id="showNotification">إرسال إشعار</button>
 
     <script>
-        // طلب الإذن لتفعيل الإشعارات
-        document.getElementById('enableNotifications').addEventListener('click', () => {
-            if (!('Notification' in window)) {
-                alert('المتصفح لا يدعم الإشعارات');
-                return;
-            }
+        let swReg=null
 
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    alert('تم تفعيل الإشعارات بنجاح!');
-                    
-                    // إرسال إشعار ترحيبي فوري
-                    new Notification('🎉 مرحباً بك!', {
-                        body: 'شكراً لتفعيل الإشعارات في تطبيقنا',
-                        icon: 'logo.png'
-                    });
+        navigator.serviceWorker.register('sw.js').then(reg=>{
+            swReg=reg
+        })
+
+        document.getElementById('enableNotifications').onclick=()=>{
+            Notification.requestPermission().then(p=>{
+                if(p==='granted'){
+                    swReg.showNotification('🎉 مرحباً بك!',{
+                        body:'تم تفعيل الإشعارات بنجاح',
+                        icon:'logo.png'
+                    })
                 }
-            });
-        });
+            })
+        }
 
-        // إرسال إشعار عند الطلب
-        document.getElementById('showNotification').addEventListener('click', () => {
-            if (Notification.permission === 'granted') {
-                new Notification('إشعار تجريبي', {
-                    body: 'هذا إشعار من الويب العادي',
-                    icon: 'logo.png'
-                });
-            } else {
-                alert('الرجاء تفعيل الإشعارات أولاً');
+        document.getElementById('showNotification').onclick=()=>{
+            if(Notification.permission==='granted'){
+                swReg.showNotification('🔔 إشعار تجريبي',{
+                    body:'الإشعار يعمل الآن من Service Worker',
+                    icon:'logo.png'
+                })
             }
-        });
-
-        // إرسال إشعار تلقائي عند تحميل الصفحة (إذا كان الإذن مُعطى)
-        window.addEventListener('load', () => {
-            if (Notification.permission === 'granted') {
-                setTimeout(() => {
-                    new Notification('مرحباً بعودتك!', {
-                        body: 'سعيد برؤيتك مرة أخرى',
-                        icon: 'logo.png'
-                    });
-                }, 2000);
-            }
-        });
+        }
     </script>
 </body>
 </html>
