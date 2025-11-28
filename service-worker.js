@@ -1,19 +1,36 @@
-const CACHE_NAME='letters-app-v2'
-const urlsToCache=['/','/index.html','/logo.png']
+const CACHE_NAME = 'letters-app-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/logo.png'
+];
 
-self.addEventListener('install',e=>{
-  e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(urlsToCache)))
-  self.skipWaiting()
-})
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+  );
+});
 
-self.addEventListener('activate',e=>{
-  e.waitUntil(self.registration.showNotification("🎉 Welcome!",{
-    body:"Thanks for installing the app! Enjoy learning letters ❤️",
-    icon:"logo.png",
-    badge:"logo.png"
-  }))
-})
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
+  );
+});
 
-self.addEventListener('fetch',e=>{
-  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))
-})
+if ('serviceWorker' in navigator && 'Notification' in window) {
+    navigator.serviceWorker.register('service-worker.js')
+    .then(reg => {
+            Notification.requestPermission().then(permission => {
+                
+                if (permission === "granted") {                   
+                    reg.showNotification("🎉 Welcome!", {
+                        body: "Thanks for installing the app! Enjoy learning letters ❤️",
+                        icon: "logo.png",
+                        badge: "logo.png"
+                    });
+                }
+            });
+    });
+ }
