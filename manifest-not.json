@@ -1,6 +1,6 @@
 {
-  "name": "Learn English Letters",
-  "short_name": "Letters",
+  "name": "Test Notification",
+  "short_name": "Notification",
   "start_url": "./not.html",
   "display": "standalone",
   "background_color": "#ffffff",
