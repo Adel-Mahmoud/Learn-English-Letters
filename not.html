@@ -2,6 +2,9 @@
 <html>
 <head>
     <title>تطبيق إشعارات صحيح</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="icon" type="image/png" href="logo.png">   
 </head>
 <body>
     <button id="enableNotifications">تفعيل الإشعارات</button>
@@ -32,6 +35,11 @@
                     icon:'logo.png'
                 })
             }
+        }
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('service-worker.js')
         }
     </script>
 </body>
