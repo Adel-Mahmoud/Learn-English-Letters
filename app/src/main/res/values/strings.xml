@@ -1,0 +1,29 @@
+
+
+
+
+<resources>
+
+    <string name="app_name">Learn English Letters</string>
+<string name="title_activity_main">MAIN_ACTIVITY</string>
+    <string name="learn_letters">تعلم الحروف</string>
+
+    <string name="test_yourself">اختبر نفسك</string>
+
+    <string name="uppercase">حروف كبيرة</string>
+
+    <string name="lowercase">حروف صغيرة</string>
+
+    <string name="random_letter">نطق حرف</string>
+
+    <string name="repeat">إعادة</string>
+
+    <string name="correct">Correct</string>
+
+    <string name="wrong">Wrong</string>
+
+    <string name="choose_letter">اختر الحرف الصحيح</string>
+
+    <string name="press_random_first">اضغط نطق حرف أولاً</string>
+
+</resources>
